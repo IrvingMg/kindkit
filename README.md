@@ -79,3 +79,7 @@ make test          # unit + e2e tests
 make test-unit     # unit tests only
 make test-e2e      # e2e tests only (require Docker)
 ```
+
+## License
+
+This project is licensed under the [Apache License 2.0](LICENSE).
