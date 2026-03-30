@@ -4,12 +4,10 @@ package e2e_test
 
 import (
 	"context"
-	"io"
 	"testing"
 
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/client"
 	"github.com/IrvingMg/kindkit"
+	"github.com/IrvingMg/kindkit/test/util/docker"
 )
 
 func TestLoadImages(t *testing.T) {
@@ -45,9 +43,7 @@ func TestLoadImages(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			for _, img := range tt.pull {
-				pullImage(t, ctx, img)
-			}
+			docker.PullImages(t, ctx, tt.pull...)
 
 			err := c.LoadImages(ctx, tt.load...)
 			if (err != nil) != tt.wantErr {
@@ -57,20 +53,3 @@ func TestLoadImages(t *testing.T) {
 	}
 }
 
-func pullImage(t *testing.T, ctx context.Context, ref string) {
-	t.Helper()
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		t.Fatalf("docker client: %v", err)
-	}
-	defer cli.Close()
-
-	rc, err := cli.ImagePull(ctx, ref, image.PullOptions{})
-	if err != nil {
-		t.Fatalf("pull %s: %v", ref, err)
-	}
-	defer rc.Close()
-	if _, err := io.Copy(io.Discard, rc); err != nil {
-		t.Fatalf("pull %s: reading response: %v", ref, err)
-	}
-}
