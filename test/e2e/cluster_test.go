@@ -10,6 +10,9 @@ import (
 	"testing"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+
 	"github.com/IrvingMg/kindkit"
 )
 
@@ -118,6 +121,26 @@ func TestClusterConfig(t *testing.T) {
 				}
 				if cfg.Host == "" {
 					t.Error("RESTConfig returned config with empty Host")
+				}
+			},
+		},
+		{
+			name: "RESTConfig can list namespaces",
+			check: func(t *testing.T) {
+				cfg, err := c.RESTConfig()
+				if err != nil {
+					t.Fatalf("RESTConfig: %v", err)
+				}
+				clientset, err := kubernetes.NewForConfig(cfg)
+				if err != nil {
+					t.Fatalf("create clientset: %v", err)
+				}
+				ns, err := clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
+				if err != nil {
+					t.Fatalf("list namespaces: %v", err)
+				}
+				if len(ns.Items) == 0 {
+					t.Error("expected at least one namespace")
 				}
 			},
 		},
