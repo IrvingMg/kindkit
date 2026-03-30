@@ -3,8 +3,11 @@ package kindkit
 import (
 	"context"
 	"fmt"
+	"os"
 	"slices"
 
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/kind/pkg/cluster"
 )
 
@@ -40,6 +43,38 @@ func Create(ctx context.Context, name string, opts ...Option) (*Cluster, error) 
 
 func (c *Cluster) Name() string {
 	return c.name
+}
+
+// RESTConfig returns a *rest.Config for the cluster.
+func (c *Cluster) RESTConfig() (*rest.Config, error) {
+	kubeconfig, err := c.provider.KubeConfig(c.name, false)
+	if err != nil {
+		return nil, fmt.Errorf("get kubeconfig for cluster %q: %w", c.name, err)
+	}
+	return clientcmd.RESTConfigFromKubeConfig([]byte(kubeconfig))
+}
+
+// KubeconfigPath writes the kubeconfig to a temporary file and returns
+// its path. The caller is responsible for removing the file.
+func (c *Cluster) KubeconfigPath() (string, error) {
+	kubeconfig, err := c.provider.KubeConfig(c.name, false)
+	if err != nil {
+		return "", fmt.Errorf("get kubeconfig for cluster %q: %w", c.name, err)
+	}
+	f, err := os.CreateTemp("", "kindkit-kubeconfig-*")
+	if err != nil {
+		return "", fmt.Errorf("create temp kubeconfig file: %w", err)
+	}
+	if _, err := f.WriteString(kubeconfig); err != nil {
+		f.Close()
+		os.Remove(f.Name())
+		return "", fmt.Errorf("write kubeconfig: %w", err)
+	}
+	if err := f.Close(); err != nil {
+		os.Remove(f.Name())
+		return "", fmt.Errorf("close kubeconfig file: %w", err)
+	}
+	return f.Name(), nil
 }
 
 // Delete deletes the cluster. It is safe to call on an already-deleted

@@ -92,6 +92,62 @@ func TestDeleteIdempotent(t *testing.T) {
 	}
 }
 
+func TestClusterConfig(t *testing.T) {
+	ctx := context.Background()
+
+	c, err := kindkit.Create(ctx, clusterName(t))
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	defer func() {
+		if err := c.Delete(ctx); err != nil {
+			t.Logf("cleanup: %v", err)
+		}
+	}()
+
+	tests := []struct {
+		name  string
+		check func(t *testing.T)
+	}{
+		{
+			name: "RESTConfig returns config with host",
+			check: func(t *testing.T) {
+				cfg, err := c.RESTConfig()
+				if err != nil {
+					t.Fatalf("RESTConfig: %v", err)
+				}
+				if cfg.Host == "" {
+					t.Error("RESTConfig returned config with empty Host")
+				}
+			},
+		},
+		{
+			name: "KubeconfigPath returns non-empty file",
+			check: func(t *testing.T) {
+				path, err := c.KubeconfigPath()
+				if err != nil {
+					t.Fatalf("KubeconfigPath: %v", err)
+				}
+				defer os.Remove(path)
+
+				info, err := os.Stat(path)
+				if err != nil {
+					t.Fatalf("stat kubeconfig file: %v", err)
+				}
+				if info.Size() == 0 {
+					t.Error("kubeconfig file is empty")
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.check(t)
+		})
+	}
+}
+
 func clusterName(t *testing.T) string {
 	name := strings.ToLower(t.Name())
 	name = strings.ReplaceAll(name, "/", "-")
