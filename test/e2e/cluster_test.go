@@ -171,6 +171,64 @@ func TestClusterConfig(t *testing.T) {
 	}
 }
 
+func TestCreateOrReuse(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name      string
+		precreate bool
+	}{
+		{
+			name:      "new cluster",
+			precreate: false,
+		},
+		{
+			name:      "existing cluster",
+			precreate: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			name := clusterName(t)
+
+			if tt.precreate {
+				c, err := kindkit.Create(ctx, name)
+				if err != nil {
+					t.Fatalf("Create: %v", err)
+				}
+				defer func() {
+					if err := c.Delete(ctx); err != nil {
+						t.Logf("cleanup: %v", err)
+					}
+				}()
+			}
+
+			c, err := kindkit.CreateOrReuse(ctx, name)
+			if err != nil {
+				t.Fatalf("CreateOrReuse: %v", err)
+			}
+			defer func() {
+				if err := c.Delete(ctx); err != nil {
+					t.Logf("cleanup: %v", err)
+				}
+			}()
+
+			if c.Name() != name {
+				t.Errorf("Name() = %q, want %q", c.Name(), name)
+			}
+
+			cfg, err := c.RESTConfig()
+			if err != nil {
+				t.Fatalf("RESTConfig: %v", err)
+			}
+			if cfg.Host == "" {
+				t.Error("RESTConfig returned config with empty Host")
+			}
+		})
+	}
+}
+
 func clusterName(t *testing.T) string {
 	name := strings.ToLower(t.Name())
 	name = strings.ReplaceAll(name, "/", "-")

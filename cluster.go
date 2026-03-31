@@ -5,11 +5,15 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"time"
 
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/kind/pkg/cluster"
 )
+
+const reachabilityTimeout = 5 * time.Second
 
 // Cluster represents a Kind cluster managed by kindkit.
 //
@@ -23,10 +27,34 @@ type Cluster struct {
 // non-nil *Cluster and an error may be returned so the caller can
 // still inspect or clean up. ctx is accepted for forward compatibility.
 func Create(ctx context.Context, name string, opts ...Option) (*Cluster, error) {
+	return create(cluster.NewProvider(), name, opts...)
+}
+
+// CreateOrReuse returns an existing cluster if its API server is
+// reachable, otherwise creates a new one. Options only apply on create.
+// Like Create, both a non-nil *Cluster and an error may be returned.
+func CreateOrReuse(ctx context.Context, name string, opts ...Option) (*Cluster, error) {
+	provider := cluster.NewProvider()
+
+	clusters, err := provider.List()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list clusters: %w", err)
+	}
+
+	if slices.Contains(clusters, name) {
+		c := &Cluster{name: name, provider: provider}
+		if err := c.isReachable(); err != nil {
+			return c, fmt.Errorf("cluster %q exists but is not reachable: %w", name, err)
+		}
+		return c, nil
+	}
+
+	return create(provider, name, opts...)
+}
+
+func create(provider *cluster.Provider, name string, opts ...Option) (*Cluster, error) {
 	o := applyOptions(opts)
 	copts := buildCreateOptions(o)
-
-	provider := cluster.NewProvider()
 
 	c := &Cluster{name: name, provider: provider}
 
@@ -75,6 +103,24 @@ func (c *Cluster) KubeconfigPath() (string, error) {
 		return "", fmt.Errorf("close kubeconfig file: %w", err)
 	}
 	return f.Name(), nil
+}
+
+func (c *Cluster) isReachable() error {
+	cfg, err := c.RESTConfig()
+	if err != nil {
+		return fmt.Errorf("get REST config: %w", err)
+	}
+	cfg.Timeout = reachabilityTimeout
+
+	disc, err := discovery.NewDiscoveryClientForConfig(cfg)
+	if err != nil {
+		return fmt.Errorf("create discovery client: %w", err)
+	}
+
+	if _, err := disc.ServerVersion(); err != nil {
+		return fmt.Errorf("API server health check: %w", err)
+	}
+	return nil
 }
 
 // Delete deletes the cluster. It is safe to call on an already-deleted

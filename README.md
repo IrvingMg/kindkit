@@ -49,6 +49,7 @@ The public API covers cluster creation, configuration access, and common operati
 | Function | Description |
 |---|---|
 | `Create(ctx, name, opts...)` | Create a cluster. Returns both `*Cluster` and error on partial failure. |
+| `CreateOrReuse(ctx, name, opts...)` | Reuse an existing cluster if reachable, otherwise create a new one. |
 | `Cluster.Delete(ctx)` | Delete the cluster. Idempotent. |
 | `Cluster.RESTConfig()` | Get a `*rest.Config` for the cluster. |
 | `Cluster.KubeconfigPath()` | Write kubeconfig to a temp file and return its path. |
