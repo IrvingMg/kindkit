@@ -10,6 +10,11 @@ import (
 	"github.com/IrvingMg/kindkit/test/util/docker"
 )
 
+const (
+	busyboxImage     = "busybox:latest"
+	nonExistentImage = "does-not-exist:99.99.99"
+)
+
 func TestLoadImages(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -19,12 +24,12 @@ func TestLoadImages(t *testing.T) {
 	}{
 		{
 			name: "existing image",
-			pull: []string{"busybox:latest"},
-			load: []string{"busybox:latest"},
+			pull: []string{busyboxImage},
+			load: []string{busyboxImage},
 		},
 		{
 			name:    "non-existent image",
-			load:    []string{"does-not-exist:99.99.99"},
+			load:    []string{nonExistentImage},
 			wantErr: true,
 		},
 	}

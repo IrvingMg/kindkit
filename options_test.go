@@ -6,7 +6,11 @@ import (
 	"time"
 )
 
-const defaultWaitForReady = 3 * time.Minute
+const (
+	readyTimeout = 3 * time.Minute
+	nodeImage    = "kindest/node:v1.31.0"
+	configFile   = "kind.yaml"
+)
 
 func TestApplyOptions(t *testing.T) {
 	rawCfg := []byte("kind: Cluster\napiVersion: kind.x-k8s.io/v1alpha4\n")
@@ -27,24 +31,24 @@ func TestApplyOptions(t *testing.T) {
 		},
 		{
 			name:        "node image",
-			opts:        []Option{WithNodeImage("kindest/node:v1.31.0")},
-			wantImage:   "kindest/node:v1.31.0",
+			opts:        []Option{WithNodeImage(nodeImage)},
+			wantImage:   nodeImage,
 			wantWaitFor: 0,
 		},
 		{
 			name:        "wait for ready",
-			opts:        []Option{WithWaitForReady(defaultWaitForReady)},
+			opts:        []Option{WithWaitForReady(readyTimeout)},
 			wantImage:   "",
-			wantWaitFor: defaultWaitForReady,
+			wantWaitFor: readyTimeout,
 		},
 		{
 			name: "all simple options",
 			opts: []Option{
-				WithNodeImage("kindest/node:v1.31.0"),
-				WithWaitForReady(defaultWaitForReady),
+				WithNodeImage(nodeImage),
+				WithWaitForReady(readyTimeout),
 			},
-			wantImage:   "kindest/node:v1.31.0",
-			wantWaitFor: defaultWaitForReady,
+			wantImage:   nodeImage,
+			wantWaitFor: readyTimeout,
 		},
 		{
 			name:          "raw config",
@@ -55,28 +59,28 @@ func TestApplyOptions(t *testing.T) {
 			name: "raw config with other options",
 			opts: []Option{
 				WithRawConfig(rawCfg),
-				WithNodeImage("kindest/node:v1.31.0"),
-				WithWaitForReady(defaultWaitForReady),
+				WithNodeImage(nodeImage),
+				WithWaitForReady(readyTimeout),
 			},
 			wantRawConfig: rawCfg,
-			wantImage:     "kindest/node:v1.31.0",
-			wantWaitFor:   defaultWaitForReady,
+			wantImage:     nodeImage,
+			wantWaitFor:   readyTimeout,
 		},
 		{
 			name:           "config file",
-			opts:           []Option{WithConfigFile("kind.yaml")},
-			wantConfigFile: "kind.yaml",
+			opts:           []Option{WithConfigFile(configFile)},
+			wantConfigFile: configFile,
 		},
 		{
 			name: "config file with other options",
 			opts: []Option{
-				WithConfigFile("kind.yaml"),
-				WithNodeImage("kindest/node:v1.31.0"),
-				WithWaitForReady(defaultWaitForReady),
+				WithConfigFile(configFile),
+				WithNodeImage(nodeImage),
+				WithWaitForReady(readyTimeout),
 			},
-			wantConfigFile: "kind.yaml",
-			wantImage:      "kindest/node:v1.31.0",
-			wantWaitFor:    defaultWaitForReady,
+			wantConfigFile: configFile,
+			wantImage:      nodeImage,
+			wantWaitFor:    readyTimeout,
 		},
 	}
 

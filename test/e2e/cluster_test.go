@@ -17,7 +17,11 @@ import (
 	"github.com/IrvingMg/kindkit"
 )
 
-const defaultWaitForReady = 3 * time.Minute
+const (
+	readyTimeout     = 3 * time.Minute
+	nodeImage        = "kindest/node:v1.32.0"
+	invalidNodeImage = "kindest/node:v0.0.0-does-not-exist"
+)
 
 func TestCreate(t *testing.T) {
 	tests := []struct {
@@ -30,8 +34,8 @@ func TestCreate(t *testing.T) {
 		{
 			name: "with node image",
 			opts: []kindkit.Option{
-				kindkit.WithNodeImage("kindest/node:v1.32.0"),
-				kindkit.WithWaitForReady(defaultWaitForReady),
+				kindkit.WithNodeImage(nodeImage),
+				kindkit.WithWaitForReady(readyTimeout),
 			},
 		},
 	}
@@ -70,7 +74,7 @@ func TestCreatePartialFailure(t *testing.T) {
 	ctx := context.Background()
 
 	c, err := kindkit.Create(ctx, clusterName(t),
-		kindkit.WithNodeImage("kindest/node:v0.0.0-does-not-exist"),
+		kindkit.WithNodeImage(invalidNodeImage),
 	)
 	if err == nil {
 		if delErr := c.Delete(ctx); delErr != nil {
@@ -370,7 +374,7 @@ nodes:
 			name := clusterName(t)
 			c, err := kindkit.Create(ctx, name,
 				kindkit.WithRawConfig(tt.raw),
-				kindkit.WithWaitForReady(defaultWaitForReady),
+				kindkit.WithWaitForReady(readyTimeout),
 			)
 			if err != nil {
 				if c != nil {

@@ -32,6 +32,11 @@ const (
 	controllerImage = "quay.io/jetstack/cert-manager-controller:" + certManagerVersion
 	webhookImage    = "quay.io/jetstack/cert-manager-webhook:" + certManagerVersion
 	cainjectorImage = "quay.io/jetstack/cert-manager-cainjector:" + certManagerVersion
+
+	readyTimeout  = 3 * time.Minute
+	cancelTimeout = 2 * time.Minute
+	pollInterval  = 5 * time.Second
+	httpTimeout   = 30 * time.Second
 )
 
 func TestCertManagerE2E(t *testing.T) {
@@ -39,7 +44,7 @@ func TestCertManagerE2E(t *testing.T) {
 
 	t.Log("Creating Kind cluster...")
 	cluster, err := kindkit.Create(ctx, "kk-certmgr-e2e",
-		kindkit.WithWaitForReady(3*time.Minute),
+		kindkit.WithWaitForReady(readyTimeout),
 	)
 	if err != nil {
 		// Partial failure: creation failed but a cluster was returned.
@@ -131,7 +136,7 @@ func TestCertManagerE2E(t *testing.T) {
 
 func fetchURL(t *testing.T, url string) []byte {
 	t.Helper()
-	httpClient := &http.Client{Timeout: 30 * time.Second}
+	httpClient := &http.Client{Timeout: httpTimeout}
 	resp, err := httpClient.Get(url)
 	if err != nil {
 		t.Fatalf("fetch %s: %v", url, err)
@@ -151,7 +156,7 @@ func fetchURL(t *testing.T, url string) []byte {
 // one available replica.
 func waitForDeployments(t *testing.T, ctx context.Context, k8s client.Client, namespace string, names ...string) {
 	t.Helper()
-	ctx, cancel := context.WithTimeout(ctx, 3*time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, readyTimeout)
 	defer cancel()
 
 	for _, name := range names {
@@ -170,7 +175,7 @@ func waitForDeployments(t *testing.T, ctx context.Context, k8s client.Client, na
 			select {
 			case <-ctx.Done():
 				t.Fatalf("timed out waiting for deployment %s/%s", namespace, name)
-			case <-time.After(5 * time.Second):
+			case <-time.After(pollInterval):
 			}
 		}
 	}
@@ -181,7 +186,7 @@ func waitForSecret(t *testing.T, ctx context.Context, k8s client.Client, namespa
 	t.Helper()
 	t.Logf("Waiting for Secret %s/%s...", namespace, name)
 
-	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, cancelTimeout)
 	defer cancel()
 
 	key := types.NamespacedName{Namespace: namespace, Name: name}
@@ -198,7 +203,7 @@ func waitForSecret(t *testing.T, ctx context.Context, k8s client.Client, namespa
 		select {
 		case <-ctx.Done():
 			t.Fatalf("timed out waiting for Secret %s/%s", namespace, name)
-		case <-time.After(3 * time.Second):
+		case <-time.After(pollInterval):
 		}
 	}
 }

@@ -14,14 +14,17 @@ import (
 	"github.com/IrvingMg/kindkit/test/util/docker"
 )
 
-const busyboxImage = "busybox:1.37"
+const (
+	busyboxImage = "busybox:1.37"
+	readyTimeout = 3 * time.Minute
+)
 
 func TestClusterLifecycle(t *testing.T) {
 	ctx := context.Background()
 
 	t.Log("Creating Kind cluster...")
 	cluster, err := kindkit.Create(ctx, "kk-basic-e2e",
-		kindkit.WithWaitForReady(3*time.Minute),
+		kindkit.WithWaitForReady(readyTimeout),
 	)
 	if err != nil {
 		// Partial failure: creation failed but a cluster was returned.
