@@ -1,6 +1,7 @@
 package kindkit
 
 import (
+	"fmt"
 	"time"
 
 	"sigs.k8s.io/kind/pkg/cluster"
@@ -11,6 +12,8 @@ type Option func(*options)
 type options struct {
 	nodeImage    string
 	waitForReady time.Duration
+	rawConfig    []byte
+	configFile   string
 }
 
 func WithNodeImage(image string) Option {
@@ -25,6 +28,24 @@ func WithWaitForReady(d time.Duration) Option {
 	}
 }
 
+// WithRawConfig passes a raw Kind cluster configuration YAML
+// (kind: Cluster, apiVersion: kind.x-k8s.io/v1alpha4) to the
+// provider. Mutually exclusive with WithConfigFile.
+// WithNodeImage and WithWaitForReady layer on top.
+func WithRawConfig(raw []byte) Option {
+	return func(o *options) {
+		o.rawConfig = raw
+	}
+}
+
+// WithConfigFile loads a Kind cluster configuration from a file path.
+// Mutually exclusive with WithRawConfig.
+func WithConfigFile(path string) Option {
+	return func(o *options) {
+		o.configFile = path
+	}
+}
+
 func applyOptions(opts []Option) options {
 	var o options
 	for _, opt := range opts {
@@ -33,13 +54,25 @@ func applyOptions(opts []Option) options {
 	return o
 }
 
-func buildCreateOptions(o options) []cluster.CreateOption {
+func buildCreateOptions(o options) ([]cluster.CreateOption, error) {
+	if len(o.rawConfig) > 0 && o.configFile != "" {
+		return nil, fmt.Errorf("WithRawConfig and WithConfigFile are mutually exclusive")
+	}
+
 	var copts []cluster.CreateOption
 
 	copts = append(copts,
 		cluster.CreateWithDisplayUsage(false),
 		cluster.CreateWithDisplaySalutation(false),
 	)
+
+	if len(o.rawConfig) > 0 {
+		copts = append(copts, cluster.CreateWithRawConfig(o.rawConfig))
+	}
+
+	if o.configFile != "" {
+		copts = append(copts, cluster.CreateWithConfigFile(o.configFile))
+	}
 
 	if o.nodeImage != "" {
 		copts = append(copts, cluster.CreateWithNodeImage(o.nodeImage))
@@ -49,5 +82,5 @@ func buildCreateOptions(o options) []cluster.CreateOption {
 		copts = append(copts, cluster.CreateWithWaitForReady(o.waitForReady))
 	}
 
-	return copts
+	return copts, nil
 }

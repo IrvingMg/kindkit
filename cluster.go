@@ -54,7 +54,10 @@ func CreateOrReuse(ctx context.Context, name string, opts ...Option) (*Cluster, 
 
 func create(provider *cluster.Provider, name string, opts ...Option) (*Cluster, error) {
 	o := applyOptions(opts)
-	copts := buildCreateOptions(o)
+	copts, err := buildCreateOptions(o)
+	if err != nil {
+		return nil, err
+	}
 
 	c := &Cluster{name: name, provider: provider}
 

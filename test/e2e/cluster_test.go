@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -256,6 +257,103 @@ func TestExportLogs(t *testing.T) {
 	}
 	if len(entries) == 0 {
 		t.Error("expected exported logs in directory, got none")
+	}
+}
+
+func TestCreateWithRawConfig(t *testing.T) {
+	tests := []struct {
+		name      string
+		raw       []byte
+		wantNodes int
+		check     func(t *testing.T, nodes []corev1.Node)
+	}{
+		{
+			name: "single-cp",
+			raw: []byte(`kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+`),
+			wantNodes: 1,
+		},
+		{
+			name: "workers-labels",
+			raw: []byte(`kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+- role: worker
+  labels:
+    kindkit.test/pool: workers
+    kindkit.test/index: "0"
+- role: worker
+  labels:
+    kindkit.test/pool: workers
+    kindkit.test/index: "1"
+`),
+			wantNodes: 3,
+			check: func(t *testing.T, nodes []corev1.Node) {
+				var workers int
+				for _, node := range nodes {
+					pool := node.Labels["kindkit.test/pool"]
+					idx := node.Labels["kindkit.test/index"]
+					if pool == "" {
+						continue
+					}
+					if pool != "workers" {
+						t.Errorf("node %s: label kindkit.test/pool = %q, want %q", node.Name, pool, "workers")
+					}
+					if idx != "0" && idx != "1" {
+						t.Errorf("node %s: label kindkit.test/index = %q, want \"0\" or \"1\"", node.Name, idx)
+					}
+					workers++
+				}
+				if workers != 2 {
+					t.Errorf("expected 2 labeled workers, got %d", workers)
+				}
+			},
+		},
+	}
+
+	ctx := context.Background()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			name := clusterName(t)
+			c, err := kindkit.Create(ctx, name,
+				kindkit.WithRawConfig(tt.raw),
+				kindkit.WithWaitForReady(defaultWaitForReady),
+			)
+			if err != nil {
+				t.Fatalf("Create: %v", err)
+			}
+			defer func() {
+				if err := c.Delete(ctx); err != nil {
+					t.Logf("cleanup: %v", err)
+				}
+			}()
+
+			cfg, err := c.RESTConfig()
+			if err != nil {
+				t.Fatalf("RESTConfig: %v", err)
+			}
+			clientset, err := kubernetes.NewForConfig(cfg)
+			if err != nil {
+				t.Fatalf("create clientset: %v", err)
+			}
+
+			nodes, err := clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+			if err != nil {
+				t.Fatalf("list nodes: %v", err)
+			}
+			if len(nodes.Items) != tt.wantNodes {
+				t.Fatalf("expected %d nodes, got %d", tt.wantNodes, len(nodes.Items))
+			}
+
+			if tt.check != nil {
+				tt.check(t, nodes.Items)
+			}
+		})
 	}
 }
 

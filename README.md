@@ -61,6 +61,8 @@ The public API covers cluster creation, configuration access, and common operati
 | `Cluster.ApplyManifests(ctx, yaml)` | Apply multi-document Kubernetes YAML via server-side apply. |
 | `WithNodeImage(image)` | Option: set the Kind node image. |
 | `WithWaitForReady(d)` | Option: set the readiness timeout. |
+| `WithRawConfig(raw)` | Option: pass raw Kind cluster config YAML for full control over cluster topology. Mutually exclusive with `WithConfigFile`. |
+| `WithConfigFile(path)` | Option: load Kind cluster config from a file path. Mutually exclusive with `WithRawConfig`. |
 
 ## Examples
 
