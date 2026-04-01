@@ -7,6 +7,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster"
 )
 
+// Option configures cluster creation.
 type Option func(*options)
 
 type options struct {
@@ -16,12 +17,14 @@ type options struct {
 	configFile   string
 }
 
+// WithNodeImage sets the node Docker image (e.g. "kindest/node:v1.31.0").
 func WithNodeImage(image string) Option {
 	return func(o *options) {
 		o.nodeImage = image
 	}
 }
 
+// WithWaitForReady sets the timeout for waiting for the cluster to be ready.
 func WithWaitForReady(d time.Duration) Option {
 	return func(o *options) {
 		o.waitForReady = d

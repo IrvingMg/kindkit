@@ -25,7 +25,8 @@ type Cluster struct {
 
 // Create creates a new Kind cluster. On partial failure, both a
 // non-nil *Cluster and an error may be returned so the caller can
-// still inspect or clean up. ctx is accepted for forward compatibility.
+// still inspect or clean up. ctx is reserved for future use; Kind's
+// API does not support cancellation.
 func Create(ctx context.Context, name string, opts ...Option) (*Cluster, error) {
 	return create(cluster.NewProvider(), name, opts...)
 }
@@ -33,6 +34,7 @@ func Create(ctx context.Context, name string, opts ...Option) (*Cluster, error) 
 // CreateOrReuse returns an existing cluster if its API server is
 // reachable, otherwise creates a new one. Options only apply on create.
 // Like Create, both a non-nil *Cluster and an error may be returned.
+// ctx is reserved for future use; Kind's API does not support cancellation.
 func CreateOrReuse(ctx context.Context, name string, opts ...Option) (*Cluster, error) {
 	provider := cluster.NewProvider()
 
@@ -72,6 +74,7 @@ func create(provider *cluster.Provider, name string, opts ...Option) (*Cluster, 
 	return c, nil
 }
 
+// Name returns the cluster name.
 func (c *Cluster) Name() string {
 	return c.name
 }
@@ -127,7 +130,8 @@ func (c *Cluster) isReachable() error {
 }
 
 // Delete deletes the cluster. It is safe to call on an already-deleted
-// cluster. ctx is accepted for forward compatibility.
+// cluster. ctx is reserved for future use; Kind's API does not support
+// cancellation.
 func (c *Cluster) Delete(ctx context.Context) error {
 	clusters, err := c.provider.List()
 	if err != nil {
@@ -143,7 +147,7 @@ func (c *Cluster) Delete(ctx context.Context) error {
 }
 
 // ExportLogs exports cluster logs to the given directory for debugging.
-// ctx is accepted for forward compatibility.
+// ctx is reserved for future use; Kind's API does not support cancellation.
 func (c *Cluster) ExportLogs(ctx context.Context, dir string) error {
 	if err := c.provider.CollectLogs(c.name, dir); err != nil {
 		return fmt.Errorf("failed to export logs for cluster %q: %w", c.name, err)
