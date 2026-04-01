@@ -1,6 +1,16 @@
 # kindkit
 
+> 💬 Feedback and contributions are welcome - open an issue or start a discussion.
+
 Go library for managing [Kind](https://kind.sigs.k8s.io/) clusters in test workflows.
+
+## Why kindkit?
+
+Go test suites that run against Kind clusters often shell out to the `kind` CLI for cluster lifecycle, making failure handling, cleanup, and debugging harder to keep consistent.
+
+Even when using Kind's Go packages directly, projects tend to reimplement the same helpers: readiness checks, kubeconfig handling, reuse logic, and teardown.
+
+kindkit provides a small, focused API for these lifecycle operations, so you can manage clusters directly from Go test code without rebuilding the same plumbing each time.
 
 ## Prerequisites
 
