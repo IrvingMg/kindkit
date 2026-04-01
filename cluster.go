@@ -138,3 +138,12 @@ func (c *Cluster) Delete(ctx context.Context) error {
 	}
 	return nil
 }
+
+// ExportLogs exports cluster logs to the given directory for debugging.
+// ctx is accepted for forward compatibility.
+func (c *Cluster) ExportLogs(ctx context.Context, dir string) error {
+	if err := c.provider.CollectLogs(c.name, dir); err != nil {
+		return fmt.Errorf("failed to export logs for cluster %q: %w", c.name, err)
+	}
+	return nil
+}

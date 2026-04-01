@@ -72,6 +72,9 @@ func TestCreatePartialFailure(t *testing.T) {
 
 	if c != nil {
 		t.Logf("partial cluster returned with error: %v", err)
+		if logErr := c.ExportLogs(ctx, t.TempDir()); logErr != nil {
+			t.Logf("export logs: %v", logErr)
+		}
 		if err := c.Delete(ctx); err != nil {
 			t.Logf("cleanup: %v", err)
 		}
@@ -226,6 +229,33 @@ func TestCreateOrReuse(t *testing.T) {
 				t.Error("RESTConfig returned config with empty Host")
 			}
 		})
+	}
+}
+
+func TestExportLogs(t *testing.T) {
+	ctx := context.Background()
+
+	c, err := kindkit.Create(ctx, clusterName(t))
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	defer func() {
+		if err := c.Delete(ctx); err != nil {
+			t.Logf("cleanup: %v", err)
+		}
+	}()
+
+	dir := t.TempDir()
+	if err := c.ExportLogs(ctx, dir); err != nil {
+		t.Fatalf("ExportLogs: %v", err)
+	}
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatalf("read log dir: %v", err)
+	}
+	if len(entries) == 0 {
+		t.Error("expected exported logs in directory, got none")
 	}
 }
 

@@ -42,8 +42,12 @@ func TestCertManagerE2E(t *testing.T) {
 		kindkit.WithWaitForReady(3*time.Minute),
 	)
 	if err != nil {
-		// Create may return a partial cluster on failure; clean it up.
+		// Partial failure: creation failed but a cluster was returned.
+		// Export logs for debugging, then clean up.
 		if cluster != nil {
+			if logErr := cluster.ExportLogs(ctx, "./test-logs"); logErr != nil {
+				t.Logf("export logs: %v", logErr)
+			}
 			if delErr := cluster.Delete(ctx); delErr != nil {
 				t.Logf("cleanup: %v", delErr)
 			}

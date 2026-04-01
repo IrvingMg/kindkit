@@ -25,7 +25,10 @@ cluster, err := kindkit.Create(ctx, "my-test-cluster",
     kindkit.WithWaitForReady(3*time.Minute),
 )
 if err != nil {
+    // Partial failure: creation failed but a cluster was returned.
+    // Export logs for debugging, then clean up.
     if cluster != nil {
+        _ = cluster.ExportLogs(ctx, "./test-logs")
         _ = cluster.Delete(ctx)
     }
     log.Fatal(err)
@@ -54,6 +57,7 @@ The public API covers cluster creation, configuration access, and common operati
 | `Cluster.RESTConfig()` | Get a `*rest.Config` for the cluster. |
 | `Cluster.KubeconfigPath()` | Write kubeconfig to a temp file and return its path. |
 | `Cluster.LoadImages(ctx, images...)` | Load local Docker images into all cluster nodes. |
+| `Cluster.ExportLogs(ctx, dir)` | Export cluster logs to a directory for debugging. |
 | `Cluster.ApplyManifests(ctx, yaml)` | Apply multi-document Kubernetes YAML via server-side apply. |
 | `WithNodeImage(image)` | Option: set the Kind node image. |
 | `WithWaitForReady(d)` | Option: set the readiness timeout. |
@@ -78,7 +82,7 @@ The project includes unit and end-to-end tests. E2e tests create real Kind clust
 ```bash
 make test          # unit + e2e tests
 make test-unit     # unit tests only
-make test-e2e      # e2e tests only (require Docker)
+make test-e2e      # e2e tests only (requires Docker)
 ```
 
 ## License
