@@ -33,6 +33,14 @@ func TestLoadImages(t *testing.T) {
 
 	c, err := kindkit.Create(ctx, clusterName(t))
 	if err != nil {
+		if c != nil {
+			if logErr := c.ExportLogs(ctx, t.TempDir()); logErr != nil {
+				t.Logf("export logs: %v", logErr)
+			}
+			if delErr := c.Delete(ctx); delErr != nil {
+				t.Logf("cleanup: %v", delErr)
+			}
+		}
 		t.Fatalf("Create: %v", err)
 	}
 	defer func() {

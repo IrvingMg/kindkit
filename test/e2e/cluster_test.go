@@ -43,6 +43,14 @@ func TestCreate(t *testing.T) {
 			name := clusterName(t)
 			c, err := kindkit.Create(ctx, name, tt.opts...)
 			if err != nil {
+				if c != nil {
+					if logErr := c.ExportLogs(ctx, t.TempDir()); logErr != nil {
+						t.Logf("export logs: %v", logErr)
+					}
+					if delErr := c.Delete(ctx); delErr != nil {
+						t.Logf("cleanup: %v", delErr)
+					}
+				}
 				t.Fatalf("Create: %v", err)
 			}
 			defer func() {
@@ -87,6 +95,14 @@ func TestDeleteIdempotent(t *testing.T) {
 
 	c, err := kindkit.Create(ctx, clusterName(t))
 	if err != nil {
+		if c != nil {
+			if logErr := c.ExportLogs(ctx, t.TempDir()); logErr != nil {
+				t.Logf("export logs: %v", logErr)
+			}
+			if delErr := c.Delete(ctx); delErr != nil {
+				t.Logf("cleanup: %v", delErr)
+			}
+		}
 		t.Fatalf("Create: %v", err)
 	}
 
@@ -104,6 +120,14 @@ func TestClusterConfig(t *testing.T) {
 
 	c, err := kindkit.Create(ctx, clusterName(t))
 	if err != nil {
+		if c != nil {
+			if logErr := c.ExportLogs(ctx, t.TempDir()); logErr != nil {
+				t.Logf("export logs: %v", logErr)
+			}
+			if delErr := c.Delete(ctx); delErr != nil {
+				t.Logf("cleanup: %v", delErr)
+			}
+		}
 		t.Fatalf("Create: %v", err)
 	}
 	defer func() {
@@ -199,6 +223,14 @@ func TestCreateOrReuse(t *testing.T) {
 			if tt.precreate {
 				c, err := kindkit.Create(ctx, name)
 				if err != nil {
+					if c != nil {
+						if logErr := c.ExportLogs(ctx, t.TempDir()); logErr != nil {
+							t.Logf("export logs: %v", logErr)
+						}
+						if delErr := c.Delete(ctx); delErr != nil {
+							t.Logf("cleanup: %v", delErr)
+						}
+					}
 					t.Fatalf("Create: %v", err)
 				}
 				defer func() {
@@ -210,6 +242,14 @@ func TestCreateOrReuse(t *testing.T) {
 
 			c, err := kindkit.CreateOrReuse(ctx, name)
 			if err != nil {
+				if c != nil {
+					if logErr := c.ExportLogs(ctx, t.TempDir()); logErr != nil {
+						t.Logf("export logs: %v", logErr)
+					}
+					if delErr := c.Delete(ctx); delErr != nil {
+						t.Logf("cleanup: %v", delErr)
+					}
+				}
 				t.Fatalf("CreateOrReuse: %v", err)
 			}
 			defer func() {
@@ -238,6 +278,14 @@ func TestExportLogs(t *testing.T) {
 
 	c, err := kindkit.Create(ctx, clusterName(t))
 	if err != nil {
+		if c != nil {
+			if logErr := c.ExportLogs(ctx, t.TempDir()); logErr != nil {
+				t.Logf("export logs: %v", logErr)
+			}
+			if delErr := c.Delete(ctx); delErr != nil {
+				t.Logf("cleanup: %v", delErr)
+			}
+		}
 		t.Fatalf("Create: %v", err)
 	}
 	defer func() {
@@ -325,6 +373,14 @@ nodes:
 				kindkit.WithWaitForReady(defaultWaitForReady),
 			)
 			if err != nil {
+				if c != nil {
+					if logErr := c.ExportLogs(ctx, t.TempDir()); logErr != nil {
+						t.Logf("export logs: %v", logErr)
+					}
+					if delErr := c.Delete(ctx); delErr != nil {
+						t.Logf("cleanup: %v", delErr)
+					}
+				}
 				t.Fatalf("Create: %v", err)
 			}
 			defer func() {
