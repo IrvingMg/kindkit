@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,6 +18,11 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/restmapper"
+)
+
+const (
+	crdEstablishedTimeout  = 60 * time.Second
+	crdEstablishedInterval = 500 * time.Millisecond
 )
 
 // ApplyManifests applies multi-document Kubernetes YAML to the cluster
@@ -66,14 +72,6 @@ func (c *Cluster) ApplyManifests(ctx context.Context, manifests []byte) error {
 		}
 
 		dr, err := resourceClient(dynClient, mapper, obj)
-		if isNoKindMatch(err) {
-			var refreshErr error
-			mapper, refreshErr = newRESTMapper(disc)
-			if refreshErr != nil {
-				return fmt.Errorf("refresh REST mapper: %w", refreshErr)
-			}
-			dr, err = resourceClient(dynClient, mapper, obj)
-		}
 		if err != nil {
 			return fmt.Errorf("resolve resource for %s %q: %w",
 				obj.GetKind(), obj.GetName(), err)
@@ -83,6 +81,17 @@ func (c *Cluster) ApplyManifests(ctx context.Context, manifests []byte) error {
 			FieldManager: "kindkit",
 		}); err != nil {
 			return fmt.Errorf("apply %s %q: %w", obj.GetKind(), obj.GetName(), err)
+		}
+
+		// Wait for CRDs to be established before processing subsequent resources.
+		if obj.GetKind() == "CustomResourceDefinition" {
+			if err := waitForCRDEstablished(ctx, dr, obj.GetName()); err != nil {
+				return fmt.Errorf("wait for CRD %q: %w", obj.GetName(), err)
+			}
+			mapper, err = newRESTMapper(disc)
+			if err != nil {
+				return fmt.Errorf("refresh REST mapper after CRD %q: %w", obj.GetName(), err)
+			}
 		}
 	}
 
@@ -116,9 +125,34 @@ func newRESTMapper(disc discovery.DiscoveryInterface) (meta.RESTMapper, error) {
 	return restmapper.NewDiscoveryRESTMapper(groupResources), nil
 }
 
-func isNoKindMatch(err error) bool {
-	if err == nil {
-		return false
+// waitForCRDEstablished polls a CRD until its Established condition is True.
+func waitForCRDEstablished(ctx context.Context, dr dynamic.ResourceInterface, name string) error {
+	ctx, cancel := context.WithTimeout(ctx, crdEstablishedTimeout)
+	defer cancel()
+
+	for {
+		obj, err := dr.Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("get CRD: %w", err)
+		}
+
+		conditions, found, err := unstructured.NestedSlice(obj.Object, "status", "conditions")
+		if err == nil && found {
+			for _, c := range conditions {
+				cond, ok := c.(map[string]any)
+				if !ok {
+					continue
+				}
+				if cond["type"] == "Established" && cond["status"] == string(metav1.ConditionTrue) {
+					return nil
+				}
+			}
+		}
+
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("timed out waiting for CRD to be established")
+		case <-time.After(crdEstablishedInterval):
+		}
 	}
-	return errors.As(err, new(*meta.NoKindMatchError))
 }
