@@ -32,6 +32,7 @@ func (c *Cluster) LoadImages(ctx context.Context, images ...string) error {
 	for _, node := range clusterNodes {
 		rc, err := dockerClient.ImageSave(ctx, images)
 		if err != nil {
+			// Images not available locally; no point trying remaining nodes.
 			return fmt.Errorf("failed to save images: %w", err)
 		}
 		err = loadImageArchive(node, rc)
