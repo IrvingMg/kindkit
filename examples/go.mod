@@ -3,7 +3,7 @@ module github.com/IrvingMg/kindkit/examples
 go 1.26
 
 require (
-	github.com/IrvingMg/kindkit v0.0.0
+	github.com/IrvingMg/kindkit v0.1.0
 	github.com/cert-manager/cert-manager v1.20.1
 	k8s.io/api v0.35.3
 	k8s.io/apimachinery v0.35.3
@@ -81,5 +81,3 @@ require (
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.2 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
-
-replace github.com/IrvingMg/kindkit => ../
