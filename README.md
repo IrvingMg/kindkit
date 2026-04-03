@@ -1,6 +1,7 @@
 # kindkit
 
-> 💬 Feedback and contributions are welcome - open an issue or start a discussion.
+[![Go Reference](https://pkg.go.dev/badge/github.com/IrvingMg/kindkit.svg)](https://pkg.go.dev/github.com/IrvingMg/kindkit)
+[![CI](https://github.com/IrvingMg/kindkit/actions/workflows/ci.yaml/badge.svg)](https://github.com/IrvingMg/kindkit/actions/workflows/ci.yaml)
 
 Go library for managing [Kind](https://kind.sigs.k8s.io/) clusters in test workflows.
 
@@ -89,7 +90,9 @@ make test-examples # Requires Docker
 
 ## Compatibility
 
-kindkit is tested against the Kind versions that target [currently-supported Kubernetes releases](https://kubernetes.io/releases/). Each Kind release supports multiple Kubernetes versions — see the [Kind releases page](https://github.com/kubernetes-sigs/kind/releases) for details. The exact Kind versions tested are defined in the [CI workflow](.github/workflows/ci.yaml).
+kindkit is tested against the Kind versions that target [currently-supported Kubernetes releases](https://kubernetes.io/releases/). Each Kind release supports multiple Kubernetes versions — see the [Kind releases page](https://github.com/kubernetes-sigs/kind/releases) for details. 
+
+The exact Kind versions tested are defined in the [CI workflow](.github/workflows/ci.yaml).
 
 ## Running tests
 
@@ -100,6 +103,10 @@ make test          # unit + e2e tests
 make test-unit     # unit tests only
 make test-e2e      # e2e tests only (requires Docker)
 ```
+
+## Contributing
+
+Feedback and contributions are welcome — open an issue, start a discussion, or submit a pull request.
 
 ## License
 
