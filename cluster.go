@@ -2,6 +2,7 @@ package kindkit
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"slices"
@@ -100,13 +101,13 @@ func (c *Cluster) KubeconfigPath() (string, error) {
 		return "", fmt.Errorf("create temp kubeconfig file: %w", err)
 	}
 	if _, err := f.WriteString(kubeconfig); err != nil {
-		f.Close()
-		os.Remove(f.Name())
-		return "", fmt.Errorf("write kubeconfig: %w", err)
+		closeErr := f.Close()
+		removeErr := os.Remove(f.Name())
+		return "", errors.Join(fmt.Errorf("write kubeconfig: %w", err), closeErr, removeErr)
 	}
 	if err := f.Close(); err != nil {
-		os.Remove(f.Name())
-		return "", fmt.Errorf("close kubeconfig file: %w", err)
+		removeErr := os.Remove(f.Name())
+		return "", errors.Join(fmt.Errorf("close kubeconfig file: %w", err), removeErr)
 	}
 	return f.Name(), nil
 }

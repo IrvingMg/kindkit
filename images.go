@@ -21,7 +21,7 @@ func (c *Cluster) LoadImages(ctx context.Context, images ...string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create docker client: %w", err)
 	}
-	defer dockerClient.Close()
+	defer dockerClient.Close() //nolint:errcheck // best-effort cleanup; no data to flush
 
 	clusterNodes, err := c.provider.ListInternalNodes(c.name)
 	if err != nil {
@@ -36,7 +36,7 @@ func (c *Cluster) LoadImages(ctx context.Context, images ...string) error {
 			return fmt.Errorf("failed to save images: %w", err)
 		}
 		err = loadImageArchive(node, rc)
-		rc.Close()
+		rc.Close() //nolint:errcheck // best-effort cleanup; data already consumed
 		if err != nil {
 			errs = append(errs, fmt.Errorf("node %s: %w", node.String(), err))
 		}

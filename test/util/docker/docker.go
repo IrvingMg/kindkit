@@ -16,7 +16,7 @@ func PullImages(t *testing.T, ctx context.Context, images ...string) {
 	if err != nil {
 		t.Fatalf("docker client: %v", err)
 	}
-	defer cli.Close()
+	defer cli.Close() //nolint:errcheck // best-effort cleanup; no data to flush
 
 	for _, img := range images {
 		t.Logf("Pulling %s...", img)
@@ -25,7 +25,7 @@ func PullImages(t *testing.T, ctx context.Context, images ...string) {
 			t.Fatalf("pull %s: %v", img, err)
 		}
 		_, copyErr := io.Copy(io.Discard, rc)
-		rc.Close()
+		rc.Close() //nolint:errcheck // best-effort cleanup; data already consumed
 		if copyErr != nil {
 			t.Fatalf("pull %s: reading response: %v", img, copyErr)
 		}
