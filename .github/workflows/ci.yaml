@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: make lint
+
+  test-unit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: make test-unit
+
+  test-e2e:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - kind-version: v0.27.0
+            node-image: kindest/node:v1.32.2
+          - kind-version: v0.29.0
+            node-image: kindest/node:v1.33.1
+          - kind-version: v0.31.0
+            node-image: kindest/node:v1.35.0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Set Kind version
+        run: |
+          go get sigs.k8s.io/kind@${{ matrix.kind-version }}
+          go mod tidy
+
+      - name: Build
+        run: go build ./...
+
+      - name: Run e2e tests
+        env:
+          KINDKIT_TEST_NODE_IMAGE: ${{ matrix.node-image }}
+        run: make test-e2e

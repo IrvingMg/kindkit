@@ -19,9 +19,11 @@ import (
 
 const (
 	readyTimeout     = 3 * time.Minute
-	nodeImage        = "kindest/node:v1.32.0"
+	defaultNodeImage = "kindest/node:v1.35.0"
 	invalidNodeImage = "kindest/node:v0.0.0-does-not-exist"
 )
+
+var nodeImage = envOrDefault("KINDKIT_TEST_NODE_IMAGE", defaultNodeImage)
 
 func TestCreate(t *testing.T) {
 	tests := []struct {
@@ -415,6 +417,13 @@ nodes:
 			}
 		})
 	}
+}
+
+func envOrDefault(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
 }
 
 func clusterName(t *testing.T) string {

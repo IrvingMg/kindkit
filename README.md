@@ -87,6 +87,10 @@ Run all examples with:
 make test-examples # Requires Docker
 ```
 
+## Compatibility
+
+kindkit is tested against the Kind versions that target [currently-supported Kubernetes releases](https://kubernetes.io/releases/). Each Kind release supports multiple Kubernetes versions — see the [Kind releases page](https://github.com/kubernetes-sigs/kind/releases) for details. The exact Kind versions tested are defined in the [CI workflow](.github/workflows/ci.yaml).
+
 ## Running tests
 
 The project includes unit and end-to-end tests. E2e tests create real Kind clusters and require Docker.
