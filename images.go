@@ -10,8 +10,10 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 )
 
-// LoadImages loads images from the local Docker daemon into all cluster nodes.
-// The images must already exist locally.
+// LoadImages loads images from the local Docker daemon into all
+// cluster nodes. The images must already exist locally. On a
+// multi-node cluster, per-node failures are collected and returned
+// together via errors.Join.
 func (c *Cluster) LoadImages(ctx context.Context, images ...string) error {
 	if len(images) == 0 {
 		return nil

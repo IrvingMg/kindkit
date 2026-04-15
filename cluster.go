@@ -16,18 +16,24 @@ import (
 
 const reachabilityTimeout = 5 * time.Second
 
-// Cluster represents a Kind cluster managed by kindkit.
+// Cluster is a handle to a Kind cluster managed by kindkit. Obtain one
+// from [Create] or [CreateOrReuse], then use its methods to work with
+// the cluster.
 //
-// A Cluster is obtained by calling Create. Use Delete to tear it down.
+// [Cluster.Delete] is idempotent and safe to call more than once.
+// When [Create] or [CreateOrReuse] return a partial failure (a
+// non-nil *Cluster together with an error), the returned handle is
+// still valid for [Cluster.ExportLogs] and [Cluster.Delete] so
+// callers can diagnose and clean up.
 type Cluster struct {
 	name     string
 	provider *cluster.Provider
 }
 
-// Create creates a new Kind cluster. On partial failure, both a
+// Create creates a Kind cluster and, if [WithWaitForReady] was
+// supplied, blocks until it is ready. On partial failure, both a
 // non-nil *Cluster and an error may be returned so the caller can
-// still inspect or clean up. ctx is reserved for future use; Kind's
-// API does not support cancellation.
+// still inspect or clean up.
 func Create(ctx context.Context, name string, opts ...Option) (*Cluster, error) {
 	return create(cluster.NewProvider(), name, opts...)
 }
@@ -35,7 +41,6 @@ func Create(ctx context.Context, name string, opts ...Option) (*Cluster, error) 
 // CreateOrReuse returns an existing cluster if its API server is
 // reachable, otherwise creates a new one. Options only apply on create.
 // Like Create, both a non-nil *Cluster and an error may be returned.
-// ctx is reserved for future use; Kind's API does not support cancellation.
 func CreateOrReuse(ctx context.Context, name string, opts ...Option) (*Cluster, error) {
 	provider := cluster.NewProvider()
 
@@ -80,7 +85,9 @@ func (c *Cluster) Name() string {
 	return c.name
 }
 
-// RESTConfig returns a *rest.Config for the cluster.
+// RESTConfig returns a *rest.Config for the cluster, suitable for
+// use with client-go, controller-runtime, and similar in-process
+// Kubernetes clients.
 func (c *Cluster) RESTConfig() (*rest.Config, error) {
 	kubeconfig, err := c.provider.KubeConfig(c.name, false)
 	if err != nil {
@@ -90,7 +97,8 @@ func (c *Cluster) RESTConfig() (*rest.Config, error) {
 }
 
 // KubeconfigPath writes the kubeconfig to a temporary file and returns
-// its path. The caller is responsible for removing the file.
+// its path, suitable for tools that read a kubeconfig file such as
+// kubectl or helm. The caller is responsible for removing the file.
 func (c *Cluster) KubeconfigPath() (string, error) {
 	kubeconfig, err := c.provider.KubeConfig(c.name, false)
 	if err != nil {
@@ -131,8 +139,7 @@ func (c *Cluster) isReachable() error {
 }
 
 // Delete deletes the cluster. It is safe to call on an already-deleted
-// cluster. ctx is reserved for future use; Kind's API does not support
-// cancellation.
+// cluster.
 func (c *Cluster) Delete(ctx context.Context) error {
 	clusters, err := c.provider.List()
 	if err != nil {
@@ -148,7 +155,6 @@ func (c *Cluster) Delete(ctx context.Context) error {
 }
 
 // ExportLogs exports cluster logs to the given directory for debugging.
-// ctx is reserved for future use; Kind's API does not support cancellation.
 func (c *Cluster) ExportLogs(ctx context.Context, dir string) error {
 	if err := c.provider.CollectLogs(c.name, dir); err != nil {
 		return fmt.Errorf("failed to export logs for cluster %q: %w", c.name, err)

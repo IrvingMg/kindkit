@@ -7,7 +7,8 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster"
 )
 
-// Option configures cluster creation.
+// Option configures cluster creation. Options are passed to [Create]
+// and [CreateOrReuse].
 type Option func(*options)
 
 type options struct {
@@ -18,13 +19,19 @@ type options struct {
 }
 
 // WithNodeImage sets the node Docker image (e.g. "kindest/node:v1.31.0").
+// When unset, Kind uses the default node image built into its library
+// (the specific image varies by Kind version).
 func WithNodeImage(image string) Option {
 	return func(o *options) {
 		o.nodeImage = image
 	}
 }
 
-// WithWaitForReady sets the timeout for waiting for the cluster to be ready.
+// WithWaitForReady sets the timeout for waiting for the cluster to be
+// ready. When unset, Create returns as soon as Kind finishes
+// provisioning the node containers, without waiting for the control
+// plane to accept requests; callers that use the cluster immediately
+// should supply a non-zero duration.
 func WithWaitForReady(d time.Duration) Option {
 	return func(o *options) {
 		o.waitForReady = d
@@ -32,9 +39,8 @@ func WithWaitForReady(d time.Duration) Option {
 }
 
 // WithRawConfig passes a raw Kind cluster configuration YAML
-// (kind: Cluster, apiVersion: kind.x-k8s.io/v1alpha4) to the
-// provider. Mutually exclusive with WithConfigFile.
-// WithNodeImage and WithWaitForReady layer on top.
+// (kind: Cluster, apiVersion: kind.x-k8s.io/v1alpha4) to Kind.
+// Mutually exclusive with WithConfigFile.
 func WithRawConfig(raw []byte) Option {
 	return func(o *options) {
 		o.rawConfig = raw

@@ -26,7 +26,15 @@ const (
 )
 
 // ApplyManifests applies multi-document Kubernetes YAML to the cluster
-// using server-side apply.
+// using server-side apply with field manager "kindkit". Documents are
+// applied in the order they appear; documents with no kind are skipped,
+// and namespaced resources without a metadata.namespace default to
+// "default".
+//
+// When a document is a CustomResourceDefinition, ApplyManifests waits
+// for Kubernetes to mark the CRD as Established before applying the
+// next document, so a single call can install a CRD together with
+// the custom resources that use it.
 func (c *Cluster) ApplyManifests(ctx context.Context, manifests []byte) error {
 	cfg, err := c.RESTConfig()
 	if err != nil {
