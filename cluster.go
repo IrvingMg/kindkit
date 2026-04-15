@@ -46,7 +46,7 @@ func CreateOrReuse(ctx context.Context, name string, opts ...Option) (*Cluster, 
 
 	clusters, err := provider.List()
 	if err != nil {
-		return nil, fmt.Errorf("failed to list clusters: %w", err)
+		return nil, fmt.Errorf("list clusters: %w", err)
 	}
 
 	if slices.Contains(clusters, name) {
@@ -74,7 +74,7 @@ func create(provider *cluster.Provider, name string, opts ...Option) (*Cluster, 
 		if listErr == nil && slices.Contains(clusters, name) {
 			return c, fmt.Errorf("cluster %q was created but is not ready: %w", name, err)
 		}
-		return nil, fmt.Errorf("failed to create cluster %q: %w", name, err)
+		return nil, fmt.Errorf("create cluster %q: %w", name, err)
 	}
 
 	return c, nil
@@ -133,7 +133,7 @@ func (c *Cluster) isReachable() error {
 	}
 
 	if _, err := disc.ServerVersion(); err != nil {
-		return fmt.Errorf("API server health check: %w", err)
+		return fmt.Errorf("check API server health: %w", err)
 	}
 	return nil
 }
@@ -143,13 +143,13 @@ func (c *Cluster) isReachable() error {
 func (c *Cluster) Delete(ctx context.Context) error {
 	clusters, err := c.provider.List()
 	if err != nil {
-		return fmt.Errorf("failed to list clusters: %w", err)
+		return fmt.Errorf("list clusters: %w", err)
 	}
 	if !slices.Contains(clusters, c.name) {
 		return nil
 	}
 	if err := c.provider.Delete(c.name, ""); err != nil {
-		return fmt.Errorf("failed to delete cluster %q: %w", c.name, err)
+		return fmt.Errorf("delete cluster %q: %w", c.name, err)
 	}
 	return nil
 }
@@ -157,7 +157,7 @@ func (c *Cluster) Delete(ctx context.Context) error {
 // ExportLogs exports cluster logs to the given directory for debugging.
 func (c *Cluster) ExportLogs(ctx context.Context, dir string) error {
 	if err := c.provider.CollectLogs(c.name, dir); err != nil {
-		return fmt.Errorf("failed to export logs for cluster %q: %w", c.name, err)
+		return fmt.Errorf("export logs for cluster %q: %w", c.name, err)
 	}
 	return nil
 }

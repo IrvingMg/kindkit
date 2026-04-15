@@ -21,13 +21,13 @@ func (c *Cluster) LoadImages(ctx context.Context, images ...string) error {
 
 	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
-		return fmt.Errorf("failed to create docker client: %w", err)
+		return fmt.Errorf("create docker client: %w", err)
 	}
 	defer dockerClient.Close() //nolint:errcheck // best-effort cleanup; no data to flush
 
 	clusterNodes, err := c.provider.ListInternalNodes(c.name)
 	if err != nil {
-		return fmt.Errorf("failed to list nodes for cluster %q: %w", c.name, err)
+		return fmt.Errorf("list nodes for cluster %q: %w", c.name, err)
 	}
 
 	var errs []error
@@ -35,7 +35,7 @@ func (c *Cluster) LoadImages(ctx context.Context, images ...string) error {
 		rc, err := dockerClient.ImageSave(ctx, images)
 		if err != nil {
 			// Images not available locally; no point trying remaining nodes.
-			return fmt.Errorf("failed to save images: %w", err)
+			return fmt.Errorf("save images: %w", err)
 		}
 		err = loadImageArchive(node, rc)
 		rc.Close() //nolint:errcheck // best-effort cleanup; data already consumed
